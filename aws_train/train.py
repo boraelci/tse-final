@@ -105,8 +105,8 @@ def main(args):
 
             scaler.scale(loss).backward()
             scaler.step(optimizer)
-            scaler.update()
             scheduler.step()
+            scaler.update()
 
             train_loss += loss.item()
 

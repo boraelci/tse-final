@@ -2,3 +2,4 @@ torch
 transformers
 tqdm
 sentencepiece
+boto3
