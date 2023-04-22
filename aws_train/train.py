@@ -34,7 +34,7 @@ class Methods2TestDataset(Dataset):
         bucket, key = self.parse_s3_path(s3_path)
         obj = s3.get_object(Bucket=bucket, Key=key)
         data = obj["Body"].read().decode("utf-8")
-        return data.splitlines()
+        return data.splitlines()[:10]
 
     def parse_s3_path(self, s3_path):
         s3_path = s3_path.replace("s3://", "")
