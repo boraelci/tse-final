@@ -154,11 +154,13 @@ class UtgTrainer:
         model.save_pretrained(f"{checkpoint_dir}")
         tokenizer.save_pretrained(f"{checkpoint_dir}")
 
+        """
         # Checkpointing
         if eval_loss < best_eval_loss:
             best_eval_loss = eval_loss
             model.save_pretrained(f"{self.output_dir}/best_model")
             tokenizer.save_pretrained(f"{self.output_dir}/best_model")
+        """
 
         return best_eval_loss
 
