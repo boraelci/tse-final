@@ -6,7 +6,6 @@ from transformers import PLBartTokenizer, PLBartForConditionalGeneration
 from tqdm import tqdm
 import math
 from torch.cuda.amp import GradScaler, autocast
-from transformers import get_linear_schedule_with_warmup
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 from training.utg_dataset import UtgDataset
 
@@ -63,11 +62,6 @@ class UtgTrainer:
         # Set up the optimizer and learning rate scheduler
         optimizer = Adam(model.parameters(), lr=self.learning_rate)
         total_steps = len(train_dataloader) * epochs
-        scheduler = get_linear_schedule_with_warmup(
-            optimizer,
-            num_warmup_steps=math.ceil(total_steps * 0.1),
-            num_training_steps=total_steps,
-        )
 
         # Use mixed-precision training if available
         scaler = GradScaler(enabled=torch.cuda.is_available())
@@ -105,7 +99,6 @@ class UtgTrainer:
 
                 train_loss += loss.item()
 
-            scheduler.step()
             print(f"Train loss: {train_loss / len(train_dataloader)}")
 
             # Evaluation loop
