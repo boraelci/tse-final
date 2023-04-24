@@ -147,7 +147,7 @@ class UtgTrainer:
             best_eval_loss = self.checkpoint(
                 model, tokenizer, eval_loss, best_eval_loss
             )
-        self.save(model, tokenizer)
+        # self.save(model, tokenizer)
 
     def checkpoint(self, model, tokenizer, eval_loss, best_eval_loss):
         checkpoint_dir = self.checkpoint_dir
