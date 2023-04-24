@@ -22,7 +22,7 @@ class UtgDataset(Dataset):
 
     def read_local_file(self, local_path, offset, limit):
         lines = None
-        with open(local_path, "r") as f:
+        with open(local_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
         return self.cut_lines(local_path, lines, offset, limit)
 

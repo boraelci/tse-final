@@ -11,6 +11,7 @@ class SagemakerRunner:
         self.learning_rate = args.learning_rate
         self.offset = args.offset
         self.limit = args.limit
+        self.model_path = args.model_path
 
     def run(self, train_input_path, train_target_path, eval_input_path, eval_target_path):
 
@@ -41,6 +42,7 @@ class SagemakerRunner:
                 "offset": self.offset,
                 "limit": self.limit,
                 "checkpoint_dir": "/opt/ml/checkpoints",
+                "model_path": self.model_path,
             },
         )
 

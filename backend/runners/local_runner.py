@@ -28,8 +28,11 @@ class LocalRunner:
             "--limit", type=int, required=True
         )  # Only specify for train, eval scales to 1/8th automatically
         parser.add_argument(
-            "--checkpoint_dir", type=str
+            "--checkpoint_dir", type=str, required=True
         )  # output/checkpoints for local or /opt/ml/checkpoints for aws
+        parser.add_argument(
+            "--model_path", type=str, required=True
+        )  # uclanlp/plbart-base or eq. to checkpoint_dir
 
         args, _ = parser.parse_known_args()
         return args

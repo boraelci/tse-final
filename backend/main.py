@@ -1,5 +1,4 @@
 import argparse
-from runners.sagemaker_runner import SagemakerRunner
 from runners.local_runner import LocalRunner
 
 def get_file_paths(input_dir, corpus_type):
@@ -35,6 +34,7 @@ def main(args):
     if platform == "local":
         local_runner.run(args)
     elif platform == "aws":
+        from runners.sagemaker_runner import SagemakerRunner
         s3_bucket_name = "sagemaker-bora-training"
         sagemaker_runner = SagemakerRunner(s3_bucket_name, args)
         sagemaker_runner.run(args.train_input_path, args.train_target_path, args.eval_input_path, args.eval_target_path)

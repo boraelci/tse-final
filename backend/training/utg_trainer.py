@@ -19,12 +19,13 @@ class UtgTrainer:
         self.limit = args.limit
         self.learning_rate = args.learning_rate
         self.checkpoint_dir = args.checkpoint_dir
+        self.model_path = args.model_path
 
     def run(
         self, train_input_path, train_target_path, eval_input_path, eval_target_path
     ):
         # Set parameters
-        model_name = "uclanlp/plbart-base"
+        model_path = self.model_path
 
         epochs = self.epochs
         batch_size = self.batch_size
@@ -33,8 +34,8 @@ class UtgTrainer:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # Load the tokenizer and model
-        tokenizer = PLBartTokenizer.from_pretrained(model_name)
-        model = PLBartForConditionalGeneration.from_pretrained(model_name).to(device)
+        tokenizer = PLBartTokenizer.from_pretrained(model_path)
+        model = PLBartForConditionalGeneration.from_pretrained(model_path).to(device)
 
         # Create the dataset and data loaders
         train_dataset = UtgDataset(
