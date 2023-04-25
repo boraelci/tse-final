@@ -127,7 +127,7 @@ class UtgTrainer:
                     optimizer.zero_grad()
 
                     # Update learning rate
-                    lr_scheduler.step()
+                    lr_scheduler.step(step)
 
                 train_loss += loss.item()
             train_end_time = time.time()
