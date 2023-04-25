@@ -72,10 +72,11 @@ class UtgTrainer:
         eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=False)
 
         # Custom learning rate schedule function
-        #total_steps = len(train_dataloader) * epochs
+        total_steps = len(train_dataloader) * epochs
         warmup_steps = total_steps * 0.008
-        optimizer = Adam(model.parameters(), lr=self.learning_rate, betas=(0.9, 0.98), eps=1e-6)
-        lr_scheduler = LambdaLR(optimizer, lambda step: UtgTrainer.inverse_sqrt_schedule(step, base_lr=self.learning_rate, warmup_steps=warmup_steps))
+        learning_rate = self.learning_rate
+        optimizer = Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.98), eps=1e-6)
+        lr_scheduler = LambdaLR(optimizer, lambda step: UtgTrainer.inverse_sqrt_schedule(step, base_lr=learning_rate, warmup_steps=warmup_steps))
 
         # Use mixed-precision training if available
         scaler = GradScaler(enabled=torch.cuda.is_available())
