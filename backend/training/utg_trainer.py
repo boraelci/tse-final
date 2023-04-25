@@ -102,7 +102,7 @@ class UtgTrainer:
             model.train()
             train_loss = 0
 
-            for step, (inputs, targets) in tqdm(enumerate(train_dataloader, desc="Training")):
+            for step, (inputs, targets) in enumerate(tqdm(train_dataloader, desc="Training")):
                 inputs = {
                     key: val.reshape(val.shape[0], -1).to(device)
                     for key, val in inputs.items()
@@ -126,7 +126,7 @@ class UtgTrainer:
                     optimizer.zero_grad()
 
                     # Update learning rate
-                    lr_scheduler.step(step)
+                    lr_scheduler.step()
 
                 train_loss += loss.item()
             train_end_time = time.time()
