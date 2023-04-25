@@ -76,7 +76,7 @@ class UtgTrainer:
         warmup_steps = total_steps * 0.008
         learning_rate = self.learning_rate
         optimizer = Adam(model.parameters(), lr=learning_rate, betas=(0.9, 0.98), eps=1e-6)
-        lr_scheduler = LambdaLR(optimizer, lambda step: UtgTrainer.inverse_sqrt_schedule(step, base_lr=learning_rate, warmup_steps=warmup_steps))
+        # lr_scheduler = LambdaLR(optimizer, lambda step: UtgTrainer.inverse_sqrt_schedule(step, base_lr=learning_rate, warmup_steps=warmup_steps))
 
         # Use mixed-precision training if available
         scaler = GradScaler(enabled=torch.cuda.is_available())
