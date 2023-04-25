@@ -83,9 +83,10 @@ class UtgTrainer:
         # Initialize variables for checkpointing
         best_eval_loss = float("inf")
         
+        checkpoint_dir = self.checkpoint_dir
         start_epoch = self.start_epoch
         if start_epoch > 1:
-            state_dics_path = f"{self.checkpoint_dir}/epochs/{start_epoch-1}.txt"
+            state_dics_path = f"{checkpoint_dir}/checkpoint.pt"
             state_dics = torch.load(state_dics_path)
             # model.load_state_dict(checkpoint['model_state_dict']) # no need
             optimizer.load_state_dict(state_dics['optimizer_state_dict'])
@@ -178,24 +179,25 @@ class UtgTrainer:
             print(f"BLEU score: {bleu_score}%")
 
             # Checkpoint
-            checkpoint_dir = self.checkpoint_dir
-            model.save_pretrained(f"{checkpoint_dir}")
-            tokenizer.save_pretrained(f"{checkpoint_dir}")
+            model.save_pretrained(checkpoint_dir)
+            tokenizer.save_pretrained(checkpoint_dir)
+            torch.save({
+                # 'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'lr_scheduler_state_dict': lr_scheduler.state_dict(),
+                'scaler_state_dict': scaler.state_dict()
+                }, f"{checkpoint_dir}/checkpoint.pt")
 
             # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             real_epoch = start_epoch + epoch
             torch.save({
                 'epoch': real_epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'lr_scheduler_state_dict': lr_scheduler.state_dict(),
-                'scaler_state_dict': scaler.state_dict(),
                 'train_loss': train_loss,
                 'eval_loss': eval_loss,
                 'eval_bleu_score': f"{bleu_score}%",
                 'train_time_taken': train_end_time - train_start_time,
                 'eval_time_taken': eval_end_time - eval_start_time,
-            }, f"{self.checkpoint_dir}/epochs/{real_epoch}.txt")
+            }, f"{checkpoint_dir}/epochs/{real_epoch}.txt")
             
             """
             if eval_loss < best_eval_loss:
