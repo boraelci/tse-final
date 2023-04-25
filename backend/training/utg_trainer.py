@@ -13,6 +13,14 @@ from torch.optim.lr_scheduler import LambdaLR
 import time
 
 class UtgTrainer:
+    
+    @staticmethod
+    def inverse_sqrt_schedule(step, base_lr, warmup_steps):
+        if step < warmup_steps:
+            return base_lr * (step ** 0.5) * warmup_steps ** -1.5
+        else:
+            return base_lr * (step ** -0.5)
+    
     def __init__(self, args):
         self.output_dir = args.output_dir
         self.epochs = args.epochs
@@ -65,14 +73,9 @@ class UtgTrainer:
 
         # Custom learning rate schedule function
         total_steps = len(train_dataloader) * epochs
-        def inverse_sqrt_schedule(step, base_lr=self.learning_rate, warmup_steps=(total_steps*0.008)):
-            if step < warmup_steps:
-                return base_lr * (step ** 0.5) * warmup_steps ** -1.5
-            else:
-                return base_lr * (step ** -0.5)
-
+        warmup_steps = total_steps * 0.008
         optimizer = Adam(model.parameters(), lr=self.learning_rate, betas=(0.9, 0.98), eps=1e-6)
-        lr_scheduler = LambdaLR(optimizer, inverse_sqrt_schedule)
+        lr_scheduler = LambdaLR(optimizer, lambda step: self.inverse_sqrt_schedule(step, base_lr=self.learning_rate, warmup_steps=warmup_steps))
 
         # Use mixed-precision training if available
         scaler = GradScaler(enabled=torch.cuda.is_available())
