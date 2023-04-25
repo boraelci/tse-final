@@ -11,6 +11,7 @@ from training.utg_dataset import UtgDataset
 from torch.optim.lr_scheduler import LambdaLR
 # from datetime import datetime
 import time
+import json
 
 def inverse_sqrt_schedule(step, base_lr, warmup_steps):
     if step < warmup_steps:
@@ -190,14 +191,15 @@ class UtgTrainer:
 
             # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             real_epoch = start_epoch + epoch
-            torch.save({
+            with open(f"{checkpoint_dir}/epochs/{real_epoch}.txt", "w") as file:
+                file.write(json.dumps({
                 'epoch': real_epoch,
                 'train_loss': train_loss,
                 'eval_loss': eval_loss,
                 'eval_bleu_score': f"{bleu_score}%",
                 'train_time_taken': train_end_time - train_start_time,
                 'eval_time_taken': eval_end_time - eval_start_time,
-            }, f"{checkpoint_dir}/epochs/{real_epoch}.txt")
+            }, indent=4))
             
             """
             if eval_loss < best_eval_loss:

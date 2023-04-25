@@ -4,3 +4,4 @@ tqdm
 sentencepiece
 boto3
 nltk
+json
