@@ -82,12 +82,13 @@ class UtgTrainer:
         
         start_epoch = self.start_epoch
         if start_epoch > 1:
-            checkpoint = torch.load('checkpoint.pth')
+            state_dics_path = f"{self.checkpoint_dir}/epochs/{start_epoch-1}.txt"
+            state_dics = torch.load(state_dics_path)
             # model.load_state_dict(checkpoint['model_state_dict']) # no need
-            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-            lr_scheduler.load_state_dict(checkpoint['lr_scheduler_state_dict'])
-            scaler.load_state_dict(checkpoint['scaler_state_dict'])
-            print("Loaded checkpoint")
+            optimizer.load_state_dict(state_dics['optimizer_state_dict'])
+            lr_scheduler.load_state_dict(state_dics['lr_scheduler_state_dict'])
+            scaler.load_state_dict(state_dics['scaler_state_dict'])
+            print("Loaded state_dics")
 
         # Training loop
         accumulation_steps = 4
