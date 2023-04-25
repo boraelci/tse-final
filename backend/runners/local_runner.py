@@ -33,6 +33,9 @@ class LocalRunner:
         parser.add_argument(
             "--model_path", type=str, required=True
         )  # uclanlp/plbart-base or eq. to checkpoint_dir
+        parser.add_argument(
+            "--start_epoch", type=int, required=True
+        )
 
         args, _ = parser.parse_known_args()
         return args

@@ -8,6 +8,9 @@ import math
 from torch.cuda.amp import GradScaler, autocast
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 from training.utg_dataset import UtgDataset
+from torch.optim.lr_scheduler import LambdaLR
+# from datetime import datetime
+import time
 
 class UtgTrainer:
     def __init__(self, args):
@@ -19,6 +22,7 @@ class UtgTrainer:
         self.learning_rate = args.learning_rate
         self.checkpoint_dir = args.checkpoint_dir
         self.model_path = args.model_path
+        self.start_epoch = args.start_epoch
 
     def run(
         self, train_input_path, train_target_path, eval_input_path, eval_target_path
@@ -59,26 +63,42 @@ class UtgTrainer:
         )
         eval_dataloader = DataLoader(eval_dataset, batch_size=batch_size, shuffle=False)
 
-        # Set up the optimizer and learning rate scheduler
-        optimizer = Adam(model.parameters(), lr=self.learning_rate)
         total_steps = len(train_dataloader) * epochs
+        # Custom learning rate schedule function
+        def inverse_sqrt_schedule(step, base_lr, warmup_steps):
+            if step < warmup_steps:
+                return base_lr * (step ** 0.5) * warmup_steps ** -1.5
+            else:
+                return base_lr * (step ** -0.5)
+
+        optimizer = Adam(model.parameters(), lr=self.learning_rate, betas=(0.9, 0.98), eps=1e-6)
+        lr_scheduler = LambdaLR(optimizer, inverse_sqrt_schedule(base_lr=self.learning_rate, warmup_steps=(total_steps*0.008)))
 
         # Use mixed-precision training if available
         scaler = GradScaler(enabled=torch.cuda.is_available())
 
         # Initialize variables for checkpointing
         best_eval_loss = float("inf")
+        
+        start_epoch = self.start_epoch
+        if start_epoch > 1:
+            checkpoint = torch.load('checkpoint.pth')
+            # model.load_state_dict(checkpoint['model_state_dict']) # no need
+            optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+            lr_scheduler.load_state_dict(checkpoint['lr_scheduler_state_dict'])
+            scaler.load_state_dict(checkpoint['scaler_state_dict'])
+            print("Loaded checkpoint")
 
         # Training loop
+        accumulation_steps = 4
         for epoch in range(epochs):
-            print(f"Epoch {epoch + 1}/{epochs}")
+            # print(f"Epoch {epoch + 1}/{epochs}")
 
+            train_start_time = time.time()
             model.train()
             train_loss = 0
 
-            for inputs, targets in tqdm(train_dataloader, desc="Training"):
-                optimizer.zero_grad()
-
+            for step, (inputs, targets) in tqdm(enumerate(train_dataloader, desc="Training")):
                 inputs = {
                     key: val.reshape(val.shape[0], -1).to(device)
                     for key, val in inputs.items()
@@ -94,13 +114,20 @@ class UtgTrainer:
                     loss = outputs.loss
 
                 scaler.scale(loss).backward()
-                scaler.step(optimizer)
-                scaler.update()
+
+                if (step + 1) % accumulation_steps == 0:
+                    # Update model parameters with gradient scaling
+                    scaler.step(optimizer)
+                    scaler.update()
+                    optimizer.zero_grad()
+
+                    # Update learning rate
+                    lr_scheduler.step()
 
                 train_loss += loss.item()
-
+            train_end_time = time.time()
             print(f"Train loss: {train_loss / len(train_dataloader)}")
-
+            eval_start_time = time.time()
             # Evaluation loop
             model.eval()
             eval_loss = 0
@@ -126,7 +153,7 @@ class UtgTrainer:
                     eval_loss += loss.item()
 
                     # Generate predictions
-                    predictions = model.generate(inputs["input_ids"])
+                    predictions = model.generate(inputs["input_ids"], max_length=1024, num_return_sequences=1)
                     predictions = predictions.cpu().numpy().tolist()
                     targets = targets.cpu().numpy().tolist()
 
@@ -139,30 +166,42 @@ class UtgTrainer:
                             pred_text.split(),
                             smoothing_function=smoothing.method1,
                         )
-
-            print(f"Eval loss: {eval_loss / len(eval_dataloader)}")
+            eval_end_time = time.time()
+            eval_loss = eval_loss / len(eval_dataloader)
+            print(f"Eval loss: {eval_loss}")
             bleu_score /= len(eval_dataloader.dataset)
-            print(f"BLEU score: {bleu_score}")
+            bleu_score = round(bleu_score*100, 2)
+            print(f"BLEU score: {bleu_score}%")
 
-            best_eval_loss = self.checkpoint(
-                model, tokenizer, eval_loss, best_eval_loss
-            )
+            # Checkpoint
+            checkpoint_dir = self.checkpoint_dir
+            model.save_pretrained(f"{checkpoint_dir}")
+            tokenizer.save_pretrained(f"{checkpoint_dir}")
+
+            # timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            real_epoch = start_epoch + epoch
+            torch.save({
+                'epoch': real_epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'lr_scheduler_state_dict': lr_scheduler.state_dict(),
+                'scaler_state_dict': scaler.state_dict(),
+                'train_loss': train_loss,
+                'eval_loss': eval_loss,
+                'eval_bleu_score': f"{bleu_score}%",
+                'train_time_taken': train_end_time - train_start_time,
+                'eval_time_taken': eval_end_time - eval_start_time,
+            }, f"{self.checkpoint_dir}/epochs/{real_epoch}.txt")
+            
+            """
+            if eval_loss < best_eval_loss:
+                best_eval_loss = eval_loss
+                model.save_pretrained(f"{self.output_dir}/best_model")
+                tokenizer.save_pretrained(f"{self.output_dir}/best_model")
+            """
+
+            return best_eval_loss
         # self.save(model, tokenizer)
-
-    def checkpoint(self, model, tokenizer, eval_loss, best_eval_loss):
-        checkpoint_dir = self.checkpoint_dir
-        model.save_pretrained(f"{checkpoint_dir}")
-        tokenizer.save_pretrained(f"{checkpoint_dir}")
-
-        """
-        # Checkpointing
-        if eval_loss < best_eval_loss:
-            best_eval_loss = eval_loss
-            model.save_pretrained(f"{self.output_dir}/best_model")
-            tokenizer.save_pretrained(f"{self.output_dir}/best_model")
-        """
-
-        return best_eval_loss
 
     def save(self, model, tokenizer):
         # Save the fine-tuned model
