@@ -176,8 +176,7 @@ class UtgTrainer:
             eval_loss = eval_loss / len(eval_dataloader)
             print(f"Eval loss: {eval_loss}")
             bleu_score /= len(eval_dataloader.dataset)
-            bleu_score = round(bleu_score*100, 2)
-            print(f"BLEU score: {bleu_score}%")
+            print(f"BLEU score: {round(bleu_score*100, 2)}%")
 
             # Checkpoint
             model.save_pretrained(checkpoint_dir)
@@ -196,7 +195,7 @@ class UtgTrainer:
                 'epoch': real_epoch,
                 'train_loss': train_loss,
                 'eval_loss': eval_loss,
-                'eval_bleu_score': f"{bleu_score}%",
+                'eval_bleu_score': bleu_score,
                 'train_time_taken': train_end_time - train_start_time,
                 'eval_time_taken': eval_end_time - eval_start_time,
             }, indent=4))
